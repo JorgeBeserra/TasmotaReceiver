@@ -2,77 +2,28 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to the device",
+        "title": "SabidosReceiver",
         "data": {
-          "port": "[%key:common::config_flow::data::port%]",
-          "source_1": "Name of source #1",
-          "source_2": "Name of source #2"
+          "topic": "Tasmota MQTT Topic",
+          "pt2323": "Enable PT2323 controls"
         }
       }
     },
     "error": {
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
+      "invalid_topic": "Enter only Topic, without slashes, whitespace or wildcards."
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+      "already_configured": "Device already configured."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Configure sources",
+        "title": "PT2323",
         "data": {
-          "source_1": "[%key:component::monoprice::config::step::user::data::source_1%]",
-          "source_2": "[%key:component::monoprice::config::step::user::data::source_2%]"
+          "pt2323": "Enable PT2323 controls"
         }
       }
-    }
-  },
-  "services": {
-    "snapshot": {
-      "name": "Snapshot",
-      "description": "Takes a snapshot of the media player zone."
-    },
-    "restore": {
-      "name": "Restore",
-      "description": "Restores a snapshot of the media player zone."
-    },
-    "set_front_left": {
-      "name": "Set Front Left",
-      "description": "Set the front right level."
-    },
-    "set_front_right": {
-      "name": "Set Front Right",
-      "description": "Set the front right level."
-    },
-    "set_center": {
-      "name": "Set Center",
-      "description": "Set the center level."
-    },
-    "set_rear_left": {
-      "name": "Set Balance",
-      "description": "Set the rear left level."
-    },
-    "set_rear_right": {
-      "name": "Set Balance",
-      "description": "Set the rear right level."
-    },
-    "set_subwoofer": {
-      "name": "Set Subwoofer",
-      "description": "Set the subwoofer level."
-    },
-    "set_balance": {
-      "name": "Set Balance",
-      "description": "Set the zone balance level."
-    },
-    "set_bass": {
-      "name": "Set Bass",
-      "description": "Set the bass level."
-    },
-    "set_treble": {
-      "name": "Set Treble",
-      "description": "Set treble level."
     }
   }
 }

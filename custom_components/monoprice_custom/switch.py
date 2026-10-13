@@ -1,111 +1,40 @@
-"""The switch entities for musiccast."""
-from typing import Any
-import logging
-import asyncio
+"""Processor functions and optional selector controls."""
+from homeassistant.components.switch import SwitchEntity
+from .const import DOMAIN
+from .entity import ReceiverEntity
+from .protocol import as_bool
 
-# from aiomusiccast.capabilities import BinarySetter
+async def async_setup_entry(hass, entry, async_add_entities):
+    c = hass.data[DOMAIN][entry.entry_id]
+    entities = [ReceiverSwitch(c, "3D", "3d", "PT2322", True),
+                ReceiverSwitch(c, "Tone", "tn", "PT2322", True)]
+    if c.has_pt2323:
+        entities += [ReceiverSwitch(c, key, cmd, "PT2323") for key, cmd in (
+            ("Surround", "surround"), ("MixBoost", "mixboost"), ("Mute", "pmute"))]
+        entities += [ReceiverSwitch(c, name, cmd, "PT2323", bit=i) for i, (name, cmd) in enumerate((
+            ("Mute FL", "pm_fl"), ("Mute FR", "pm_fr"), ("Mute Center", "pm_ct"),
+            ("Mute Subwoofer", "pm_sb"), ("Mute SL", "pm_rl"), ("Mute SR", "pm_rr")))]
+    async_add_entities(entities)
 
-from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv, entity_platform, service
-from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-#from . import DOMAIN, MusicCastCapabilityEntity, MusicCastDataUpdateCoordinator
-
-from .const import (
-    DOMAIN,
-    FIRST_RUN,
-    MONOPRICE_OBJECT,
-    CONF_DELAY,
-    CONF_CONTROLLER_DATA,
-    COMMANDS,
-    COMMANDS_ENCODING,
-    SUPPORTED_CONTROLLER
-)
-
-from .controller import get_controller
-
-_LOGGER = logging.getLogger(__name__)
-PARALLEL_UPDATES = 1
-
-async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:   
-    
-    monoprice = hass.data[DOMAIN][config_entry.entry_id][MONOPRICE_OBJECT]
-
-    switch_entities = []
-
-    switch_entities.append(SwitchCapability(hass, monoprice, "3D", config_entry, config_entry.unique_id or config_entry.entry_id))    
-    switch_entities.append(SwitchCapability(hass, monoprice, "TONE", config_entry, config_entry.unique_id or config_entry.entry_id))
-
-    # only call update before add if it's the first run so we can try to detect zones
-    first_run = hass.data[DOMAIN][config_entry.entry_id][FIRST_RUN]
-    async_add_entities(switch_entities, first_run)
-
-
-class SwitchCapability(SwitchEntity):
-    """Representation of a Monoprice switch entity."""
-
-    def __init__(self, hass, monoprice, control_type, config_entry, unique_id):
-        """Initialize new zone controls."""
-        self.hass = hass
-        self._monoprice = monoprice
-        self._control_type = control_type
-        
-
-        self._delay = CONF_DELAY
-        self._controller_data = CONF_CONTROLLER_DATA
-        self._supported_controller = SUPPORTED_CONTROLLER
-        self._commands_encoding = COMMANDS_ENCODING
-        self._commands = COMMANDS
-
-        self._attr_unique_id = f"{unique_id}_{self._control_type}"
-        self._attr_has_entity_name = True
-        self._attr_name = f"{control_type} level"
-        self._attr_native_step = 1
-        self._attr_native_value = None
-        self._attr_device_class = SwitchDeviceClass.SWITCH
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, unique_id)},
-            manufacturer="Monoprice",
-            model="6-Zone Amplifier",
-            name="Zone"
-        )
-
-        self._temp_lock = asyncio.Lock()
-        
-        self._controller = get_controller(
-            self.hass,
-            self._supported_controller,
-            self._commands_encoding,
-            unique_id,
-            self._controller_data,
-            self._delay
-        )
-            
-        self._update_success = True
+class ReceiverSwitch(ReceiverEntity, SwitchEntity):
+    def __init__(self, coordinator, key, command, chip, inverse=False, bit=None):
+        super().__init__(coordinator, f"{chip}_{key}", key if chip == "PT2322" else f"PT2323 {key}")
+        self.state_key = key
+        self.command = command
+        self.chip = chip
+        self.inverse = inverse
+        self.bit = bit
 
     @property
-    def is_on(self) -> bool:
-        """Return the current status."""
-        return self._feature.is_on
+    def is_on(self):
+        if self.bit is not None:
+            mask = self.values.get("ChannelMute")
+            return bool(mask & (1 << self.bit)) if isinstance(mask, int) else None
+        value = as_bool(self.values.get(self.state_key))
+        return not value if value is not None and self.inverse else value
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn on the capability."""
-        await self.send_command(self._commands['3d'], 0)
+    async def async_turn_on(self, **kwargs):
+        await self.coordinator.async_send(self.command, 0 if self.inverse else 1)
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn off the capability."""
-        await self.send_command(self._commands['tone'], 0)
-
-    async def send_command(self, command, level):
-        async with self._temp_lock:
-            try:
-                await self._controller.send(command, level)
-            except Exception as e:
-                _LOGGER.exception(e)
+    async def async_turn_off(self, **kwargs):
+        await self.coordinator.async_send(self.command, 1 if self.inverse else 0)

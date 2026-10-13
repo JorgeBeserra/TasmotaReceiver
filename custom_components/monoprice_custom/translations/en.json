@@ -1,40 +1,29 @@
 {
-    "config": {
-        "abort": {
-            "already_configured": "Device is already configured"
-        },
-        "error": {
-            "cannot_connect": "Failed to connect",
-            "unknown": "Unexpected error"
-        },
-        "step": {
-            "user": {
-                "data": {
-                    "port": "Port",
-                    "source_1": "Name of source #1",
-                    "source_2": "Name of source #2",
-                    "source_3": "Name of source #3",
-                    "source_4": "Name of source #4",
-                    "source_5": "Name of source #5",
-                    "source_6": "Name of source #6"
-                },
-                "title": "Connect to the device"
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "SabidosReceiver",
+        "data": {
+          "topic": "Tasmota MQTT Topic",
+          "pt2323": "Enable PT2323 controls"
         }
+      }
     },
-    "options": {
-        "step": {
-            "init": {
-                "data": {
-                    "source_1": "Name of source #1",
-                    "source_2": "Name of source #2",
-                    "source_3": "Name of source #3",
-                    "source_4": "Name of source #4",
-                    "source_5": "Name of source #5",
-                    "source_6": "Name of source #6"
-                },
-                "title": "Configure sources"
-            }
-        }
+    "error": {
+      "invalid_topic": "Enter only Topic, without slashes, whitespace or wildcards."
+    },
+    "abort": {
+      "already_configured": "Device already configured."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "PT2323",
+        "data": {
+          "pt2323": "Enable PT2323 controls"
+        }
+      }
+    }
+  }
 }
